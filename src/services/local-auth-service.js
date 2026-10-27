@@ -44,7 +44,7 @@ export function createLocalAuthService({
       const passwordHash = await hashPassword(password, config.env);
       const userId = randomUUID();
       const identityId = randomUUID();
-      const userRole = await rbacRepository.findRoleByName('user');
+      const userRole = await rbacRepository.findRoleByName('student');
 
       await db.transaction(async (trx) => {
         await users.create(
