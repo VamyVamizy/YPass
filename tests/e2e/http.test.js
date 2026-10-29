@@ -156,6 +156,35 @@ describe('http skeleton', () => {
     expect((await studentAgent.get('/manager')).status).toBe(200);
   });
 
+  it('treats configured MANAGERS as admin users', async () => {
+    ctx = await createTestApp({
+      MANAGERS: 'env-admin@example.test',
+      LOCAL_AUTH_EMAIL_FLOW: 'disabled',
+      EMAIL_ENABLED: 'false',
+    });
+    const { default: request } = await import('supertest');
+    const agent = request.agent(ctx.app);
+    const registerPage = await agent.get('/auth/register');
+    await agent.post('/auth/register').type('form').send({
+      _csrf: extractCsrf(registerPage.text),
+      username: 'env-admin-user',
+      email: 'env-admin@example.test',
+      password: 'correct-horse-battery',
+      displayName: 'Env Admin User',
+    });
+    const loginPage = await agent.get('/auth/login');
+    await agent.post('/auth/login').type('form').send({
+      _csrf: extractCsrf(loginPage.text),
+      username: 'env-admin-user',
+      password: 'correct-horse-battery',
+    });
+
+    const me = await agent.get('/api/v1/me');
+    expect(me.status).toBe(200);
+    expect(me.body.data.roles).toContain('admin');
+    expect((await agent.get('/manager')).status).toBe(200);
+  });
+
   it('does not register API routes when API_ENABLED is false', async () => {
     ctx = await createTestApp({ API_ENABLED: 'false' });
     const res = await ctx.request.get('/api/v1/me');
