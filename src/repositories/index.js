@@ -310,6 +310,9 @@ export function createPassRepository(db) {
         destination: rows.find((row) => row.id === destinationId),
       };
     },
+    async findAppointmentForStudentAtTime(studentId, scheduledAt, trx = knex) {
+      return trx('appointments').where({ student_id: studentId, scheduled_at: scheduledAt }).first();
+    },
     async createAppointment(appointment, trx = knex) {
       await trx('appointments').insert(appointment);
       return appointment;
