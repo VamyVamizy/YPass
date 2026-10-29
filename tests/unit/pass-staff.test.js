@@ -365,4 +365,23 @@ describe('staff pass controls', () => {
       active: 0,
     });
   });
+
+  it('replaces the staff role instead of accumulating lower roles', async () => {
+    ctx = await createTestApp();
+    const userId = randomUUID();
+    await ctx.container.db.knex('users').insert({
+      id: userId,
+      display_name: 'Role Test User',
+      primary_email: `${userId}@example.test`,
+      status: 'active',
+    });
+
+    await ctx.container.userService.setStaffRole({ userId, roleName: 'teacher' });
+    await ctx.container.userService.setStaffRole({ userId, roleName: 'manager' });
+
+    const roles = await ctx.container.rbac.getRoles(userId);
+    expect(roles).toContain('manager');
+    expect(roles).not.toContain('teacher');
+    expect(roles).not.toContain('student');
+  });
 });

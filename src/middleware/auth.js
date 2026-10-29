@@ -52,6 +52,27 @@ export function requireRole(roleName) {
 }
 
 /**
+ * Require the requested staff level or a higher level.
+ * Managers can use teacher workflows; students cannot use staff workflows.
+ * @param {'teacher'|'manager'} minimumRole
+ */
+export function requireStaffRole(minimumRole) {
+  return (req, _res, next) => {
+    if (!req.session?.userId) {
+      next(new AuthenticationError());
+      return;
+    }
+    const roles = req.currentUser?.roles || [];
+    const allowed = minimumRole === 'teacher' ? ['teacher', 'manager'] : ['manager'];
+    if (!allowed.some((role) => roles.includes(role))) {
+      next(new AuthorizationError());
+      return;
+    }
+    next();
+  };
+}
+
+/**
  * @param {string} permissionName
  */
 export function requirePermission(permissionName) {
@@ -81,7 +102,7 @@ export function requireManager(managerEmails) {
       return;
     }
     const email = req.currentUser?.primary_email?.trim().toLowerCase();
-    if (!email || !managerEmails.includes(email)) {
+    if (!email || (!req.currentUser?.roles?.includes('manager') && !managerEmails.includes(email))) {
       next(new AuthorizationError());
       return;
     }

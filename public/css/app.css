@@ -50,6 +50,12 @@ button,
   display: inline-block;
   cursor: pointer;
 }
+.button-disabled {
+  background: #a8a29e;
+  color: #57534e;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .flash {
   padding: 0.75rem;
   background: #fff;

@@ -1,7 +1,11 @@
 <h1>Elektronischer Hallenpass</h1>
 <% if (typeof currentUser !== 'undefined' && currentUser) { %>
   <p>Signed in as <%= currentUser.display_name %>.</p>
-  <a href="/kiosk">Make a Pass</a>
+  <% if (currentUser.roles?.includes('student') && !currentUser.roles?.includes('teacher') && !currentUser.roles?.includes('manager')) { %>
+    <span class="button button-disabled" aria-disabled="true">Make a Pass</span>
+  <% } else { %>
+    <a class="button" href="/kiosk">Make a Pass</a>
+  <% } %>
 <% } else { %>
   <p>This is Elektronischer Hallenpass</p>
   <p><a href="/auth/login">Sign in</a> to continue.</p>

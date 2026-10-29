@@ -118,6 +118,12 @@ export function createRbacRepository(db) {
         .onConflict(['user_id', 'role_id'])
         .ignore();
     },
+    async removeRoles(userId, roleNames, trx = knex) {
+      await trx('user_roles')
+        .where('user_roles.user_id', userId)
+        .whereIn('user_roles.role_id', trx('roles').select('id').whereIn('name', roleNames))
+        .delete();
+    },
     async listRolesForUser(userId, trx = knex) {
       return trx('roles')
         .join('user_roles', 'roles.id', 'user_roles.role_id')
@@ -451,10 +457,16 @@ export function createPassRepository(db) {
         .update({ ...patch, updated_at: trx.fn.now() });
     },
     async listManagerUsers(trx = knex) {
-      return trx('users')
+      const rows = await trx('users')
+        .leftJoin('user_roles', 'users.id', 'user_roles.user_id')
+        .leftJoin('roles', 'user_roles.role_id', 'roles.id')
         .where({ status: 'active' })
         .orderBy('display_name')
-        .select('id', 'display_name', 'primary_email');
+        .select('users.id', 'users.display_name', 'users.primary_email', 'roles.name as role');
+      return [...new Map(rows.map((row) => [row.id, { ...row, roles: [] }])).values()].map((user) => ({
+        ...user,
+        roles: rows.filter((row) => row.id === user.id && row.role).map((row) => row.role),
+      }));
     },
   };
 }

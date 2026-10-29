@@ -51,7 +51,7 @@ export function createUserService({
       if (existing) {
         let user = await users.findById(existing.user_id);
         if (!user) {
-          const userRole = await rbacRepository.findRoleByName('user');
+          const userRole = await rbacRepository.findRoleByName('student');
           user = await db.transaction(async (trx) => {
             const repaired = {
               id: existing.user_id,
@@ -73,7 +73,7 @@ export function createUserService({
       }
 
       const userId = randomUUID();
-      const userRole = await rbacRepository.findRoleByName('user');
+      const userRole = await rbacRepository.findRoleByName('student');
       const created = {
         id: userId,
         display_name: displayName || `${provider} user`,
@@ -165,6 +165,26 @@ export function createUserService({
 
     listIdentities(userId) {
       return identities.listByUser(userId);
+    },
+
+    async setStaffRole({ userId, roleName }, reqLike = {}) {
+      const allowedRoles = ['student', 'teacher', 'manager'];
+      if (!allowedRoles.includes(roleName)) {
+        throw new ValidationError('Choose a valid staff role');
+      }
+      const target = await users.findById(userId);
+      if (!target) {
+        throw new ValidationError('User not found');
+      }
+      const role = await rbacRepository.findRoleByName(roleName);
+      if (!role) {
+        throw new ValidationError('Role is not configured');
+      }
+      await db.transaction(async (trx) => {
+        await rbacRepository.removeRoles(userId, allowedRoles, trx);
+        await rbacRepository.assignRole(userId, role.id, trx);
+      });
+      await writeAudit('user.role.update', reqLike.userId, reqLike, { userId, role: roleName });
     },
   };
 }

@@ -5,8 +5,12 @@
     <% if (typeof currentUser !== 'undefined' && currentUser) { %>
       <a href="/example">Example</a>
       <a href="/account">Account</a>
-      <a href="/manager">Manager</a>
-      <a href="/teacher">Teacher</a>
+      <% if (currentUser.roles?.includes('manager')) { %>
+        <a href="/manager">Manager</a>
+      <% } %>
+      <% if (currentUser.roles?.includes('teacher') || currentUser.roles?.includes('manager')) { %>
+        <a href="/teacher">Teacher</a>
+      <% } %>
       
       <form class="inline" method="post" action="/auth/logout">
         <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
