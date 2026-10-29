@@ -93,12 +93,12 @@ export function createPassService({
         updated_at: now,
         ...(completed
           ? {
-              status: eventType === 'ended' ? 'cancelled' : 'completed',
-              ended_at: now,
-              ended_location_id: kiosk.location_id,
-              ended_kiosk_id: kiosk.id,
-              ended_teacher_id: kiosk.location_teacher_id || null,
-            }
+            status: eventType === 'ended' ? 'cancelled' : 'completed',
+            ended_at: now,
+            ended_location_id: kiosk.location_id,
+            ended_kiosk_id: kiosk.id,
+            ended_teacher_id: kiosk.location_teacher_id || null,
+          }
           : {}),
         ...(arrived ? { status: 'arrived', arrived_at: now } : {}),
         ...(leaving ? { status: 'returning' } : {}),
@@ -258,13 +258,13 @@ export function createPassService({
       const patch =
         action === 'approve'
           ? {
-              status: 'active',
-              approved_by: userId,
-              approved_at: now,
-              departed_at: now,
-              timeout_at: new Date(now.getTime() + 30 * 60 * 1000),
-              updated_at: now,
-            }
+            status: 'active',
+            approved_by: userId,
+            approved_at: now,
+            departed_at: now,
+            timeout_at: new Date(now.getTime() + 30 * 60 * 1000),
+            updated_at: now,
+          }
           : { status: 'cancelled', ended_at: now, ended_teacher_id: userId, updated_at: now };
       await passesRepository.updatePass(passId, patch, trx);
       await passesRepository.addEvent(
@@ -363,8 +363,8 @@ export function createPassService({
       ...kiosk,
       display_status:
         kiosk.active &&
-        kiosk.last_seen_at &&
-        now.getTime() - new Date(kiosk.last_seen_at).getTime() < 60 * 1000
+          kiosk.last_seen_at &&
+          now.getTime() - new Date(kiosk.last_seen_at).getTime() < 60 * 1000
           ? 'online'
           : 'offline',
     }));
@@ -462,6 +462,50 @@ export function createPassService({
     });
   }
 
+  async function endExpiredPasses() {
+  return db.transaction(async (trx) => {
+    const allPasses = await passes.listPasses(trx);
+    const now = clock.now();
+    const expiredPasses = [];
+
+    for (const pass of allPasses) {
+      if (
+        ['active', 'arrived', 'returning'].includes(pass.status) &&
+        pass.timeout_at &&
+        new Date(pass.timeout_at) <= now
+      ) {
+        expiredPasses.push(pass);
+      }
+    }
+
+    for (const pass of expiredPasses) {
+      const patch = {
+        status: 'expired',
+        ended_at: now,
+        updated_at: now,
+      };
+
+      await passes.updatePass(pass.id, patch, trx);
+      await passes.addEvent(
+        {
+          id: randomUUID(),
+          pass_id: pass.id,
+          event_type: 'expired',
+          actor_user_id: null,
+          occurred_at: now,
+          metadata_json: JSON.stringify({ reason: 'timeout' }),
+        },
+        trx,
+      );
+    }
+
+    return {
+      expiredCount: expiredPasses.length,
+      passes: expiredPasses.map((pass) => ({ ...pass, status: 'expired', ended_at: now })),
+    };
+  });
+}
+
   const passesRepository = passes;
   return {
     kioskOptions,
@@ -480,6 +524,7 @@ export function createPassService({
     updateManagerLocation,
     createManagerKiosk,
     updateManagerKiosk,
+    endExpiredPasses,
   };
 }
 
@@ -513,3 +558,4 @@ function transitionForScan(pass, kioskLocationId) {
   }
   return 'ended';
 }
+

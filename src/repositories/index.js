@@ -266,6 +266,9 @@ export function createPassRepository(db) {
     async updatePass(id, patch, trx = knex) {
       await trx('passes').where({ id }).update(patch);
     },
+    async listPasses(trx = knex){
+      return trx('passes').orderBy('requested_at')
+    },
     async addEvent(event, trx = knex) {
       await trx('pass_events').insert(event);
     },
