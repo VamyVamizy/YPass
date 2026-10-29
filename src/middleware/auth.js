@@ -63,7 +63,8 @@ export function requireStaffRole(minimumRole) {
       return;
     }
     const roles = req.currentUser?.roles || [];
-    const allowed = minimumRole === 'teacher' ? ['teacher', 'manager'] : ['manager'];
+    const allowed =
+      minimumRole === 'teacher' ? ['admin', 'teacher', 'manager'] : ['admin', 'manager'];
     if (!allowed.some((role) => roles.includes(role))) {
       next(new AuthorizationError());
       return;
@@ -102,7 +103,12 @@ export function requireManager(managerEmails) {
       return;
     }
     const email = req.currentUser?.primary_email?.trim().toLowerCase();
-    if (!email || (!req.currentUser?.roles?.includes('manager') && !managerEmails.includes(email))) {
+    if (
+      !email ||
+      (!req.currentUser?.roles?.includes('admin') &&
+        !req.currentUser?.roles?.includes('manager') &&
+        !managerEmails.includes(email))
+    ) {
       next(new AuthorizationError());
       return;
     }

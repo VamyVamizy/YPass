@@ -183,7 +183,7 @@ export function createPassService({
         approved_by: null,
         approved_at: autoApproved ? now : null,
         departed_at: autoApproved ? now : null,
-        timeout_at: autoApproved ? new Date(now.getTime() + 30 * 60 * 1000) : null,
+        timeout_at: autoApproved ? new Date(now.getTime() + 1 * 1 * 1000) : null,
       };
       await passes.createPass(
         pass,
@@ -336,18 +336,21 @@ export function createPassService({
 
   async function managerDashboard(filters = {}) {
     const now = clock.now();
-    const [passRows, appointmentRows, students, locations, kiosks, users] = await Promise.all([
+    const [passRows, timedOutRows, appointmentRows, students, locations, kiosks, users] = await Promise.all([
       passesRepository.listManagerPasses({ ...filters, now }),
+      passesRepository.listManagerPasses({ status: 'timedout', now }),
       passesRepository.listManagerAppointments(filters),
       passesRepository.listManagerStudents(),
       passesRepository.listManagerLocations(),
       passesRepository.listManagerKiosks(),
       passesRepository.listManagerUsers(),
     ]);
-    const passesWithTimeoutStatus = passRows.map((pass) => ({
+    const withTimeoutStatus = (pass) => ({
       ...pass,
       display_status: isTimedOut(pass, now) ? 'timedout' : pass.status,
-    }));
+    });
+    const passesWithTimeoutStatus = passRows.map(withTimeoutStatus);
+    const timedOutPasses = timedOutRows.map(withTimeoutStatus);
     const kiosksWithStatus = kiosks.map((kiosk) => ({
       ...kiosk,
       display_status:
@@ -359,6 +362,8 @@ export function createPassService({
     }));
     return {
       passes: passesWithTimeoutStatus,
+      recentTimedOutPasses: timedOutPasses.slice(0, 5),
+      timedOutPasses,
       appointments: appointmentRows,
       filters,
       students,
