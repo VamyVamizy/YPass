@@ -301,12 +301,20 @@ export function createPassService({
   }) {
     const when = new Date(scheduledAt);
     if (Number.isNaN(when.getTime())) throw new ValidationError('Choose a valid appointment time');
-    if (when <= clock.now()) throw new ValidationError('Appointment time must be in the future');
     return db.transaction(async (trx) => {
       const student = await passesRepository.findStudentByNumber(studentNumber, trx);
       if (!student) throw new ValidationError('Student ID was not found');
       if (student.display_name.trim().toLowerCase() !== studentName.trim().toLowerCase())
         throw new ValidationError('Student name does not match that student ID');
+      if (when <= clock.now()) throw new ValidationError('Appointment time must be in the future');
+      const existingAppointment = await passesRepository.findAppointmentForStudentAtTime(
+        student.id,
+        when,
+        trx,
+      );
+      if (existingAppointment) {
+        throw new ConflictError('This student already has an appointment at that time');
+      }
       const { origin, destination } = await passesRepository.findLocationPair(
         originLocationId,
         destinationLocationId,
