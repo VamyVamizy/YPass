@@ -5,10 +5,10 @@
     <% if (typeof currentUser !== 'undefined' && currentUser) { %>
       <a href="/example">Example</a>
       <a href="/account">Account</a>
-      <% if (currentUser.roles?.includes('manager')) { %>
+      <% if (currentUser.roles?.includes('admin') || currentUser.roles?.includes('manager')) { %>
         <a href="/manager">Manager</a>
       <% } %>
-      <% if (currentUser.roles?.includes('teacher') || currentUser.roles?.includes('manager')) { %>
+      <% if (currentUser.roles?.includes('admin') || currentUser.roles?.includes('teacher') || currentUser.roles?.includes('manager')) { %>
         <a href="/teacher">Teacher</a>
       <% } %>
       

@@ -366,7 +366,9 @@ export function createPassRepository(db) {
         query.where('passes.status', filters.status);
       }
       if (filters.studentNumber) query.where('students.student_number', filters.studentNumber);
-      return query.orderBy('passes.requested_at', 'desc');
+      query.orderBy('passes.requested_at', 'desc');
+      if (filters.limit) query.limit(filters.limit);
+      return query;
     },
     async listManagerAppointments(filters = {}, trx = knex) {
       const query = trx('appointments')

@@ -288,6 +288,11 @@ describe('staff pass controls', () => {
     expect(timedOut.passes).toHaveLength(1);
     expect(timedOut.passes[0].id).toBe(requested.pass.id);
     expect(timedOut.passes[0].display_status).toBe('timedout');
+    expect(timedOut.recentTimedOutPasses).toHaveLength(1);
+    expect(timedOut.recentTimedOutPasses[0].id).toBe(requested.pass.id);
+    expect(timedOut.recentTimedOutPasses[0].display_status).toBe('timedout');
+    expect(timedOut.timedOutPasses).toHaveLength(1);
+    expect(timedOut.timedOutPasses[0].id).toBe(requested.pass.id);
   });
 
   it('lets managers create and update students, locations, and kiosks', async () => {
