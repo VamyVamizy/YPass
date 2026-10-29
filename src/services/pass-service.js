@@ -183,7 +183,7 @@ export function createPassService({
         approved_by: null,
         approved_at: autoApproved ? now : null,
         departed_at: autoApproved ? now : null,
-        timeout_at: autoApproved ? new Date(now.getTime() + 1 * 1 * 1000) : null,
+        timeout_at: autoApproved ? new Date(now.getTime() + 30 * 60 * 1000) : null,
       };
       await passes.createPass(
         pass,
