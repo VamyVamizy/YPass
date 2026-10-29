@@ -15,7 +15,12 @@ export function createUserService({
   rbac,
   tokens,
   audit,
+  managerEmails = [],
 }) {
+  const normalizedManagerEmails = new Set(
+    (managerEmails || []).map((email) => String(email).trim().toLowerCase()).filter(Boolean),
+  );
+
   async function withAuthz(user) {
     if (!user) {
       return null;
@@ -24,7 +29,12 @@ export function createUserService({
       rbac.getRoles(user.id),
       rbac.getPermissions(user.id),
     ]);
-    return { ...user, roles, permissions };
+    const email = user.primary_email?.trim().toLowerCase();
+    const effectiveRoles = new Set(roles);
+    if (email && normalizedManagerEmails.has(email)) {
+      effectiveRoles.add('admin');
+    }
+    return { ...user, roles: [...effectiveRoles], permissions };
   }
 
   async function writeAudit(eventType, actorUserId, reqLike, metadata) {
