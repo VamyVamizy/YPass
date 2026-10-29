@@ -8,6 +8,7 @@ import { createContainer } from './container.js';
 import { createApp } from './app.js';
 import { createRealtime } from '#realtime/index.js';
 import { createJobs } from '#jobs/index.js';
+import { startPassExpiry } from './pulse/passExpiry.js';
 
 export async function startServer({ config, logger }) {
   const container = await createContainer({ config, logger });
@@ -112,6 +113,12 @@ export async function startServer({ config, logger }) {
       });
     });
   }
+
+
+  const passExpiry = startPassExpiry({
+    passService: container.passService
+  })
+  passExpiry.start()
 
   return { server, container, shutdown };
 }
