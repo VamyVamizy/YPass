@@ -7,7 +7,7 @@
     <p class="account-info-box">✉ <%= currentUser.primary_email || 'no email' %></p>
     <form class="inline" method="post" action="/auth/logout">
       <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
-      <button type="submit">Sign out</button>
+      <button type="submit">↰ Sign out</button>
     </form>
   </li>
 

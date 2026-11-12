@@ -31,7 +31,7 @@
         </div>
         <% if (!waitingForApproval) { %><button type="submit" class="primary-button">Continue</button><% } %>
       </form>
-      <p class="scanner-note"><%= waitingForApproval ? 'This kiosk is locked until the teacher accepts or cancels the pass.' : 'A USB barcode scanner works like a keyboard. Keep this field focused.' %></p>
+      <p class="scanner-note"><%= waitingForApproval ? 'ⓘ This kiosk is locked until the teacher accepts or cancels the pass.' : 'ⓘ A USB barcode scanner works like a keyboard. Keep this field focused.' %></p>
     </section>
 
     <% if (appointmentPrompt) { %>

@@ -260,7 +260,7 @@ export function createPassService({
         origin_kiosk_id: kiosk.id,
         destination_location_id: appointment.destination_location_id,
         destination_teacher_id: appointment.destination_teacher_id || null,
-        journey_type: destination.destination?.type === 'round_trip' ? 'round_trip' : 'one_way',
+        journey_type: 'one_way',
         status: 'active',
         appointment_id: appointment.id,
         created_by: actorUserId || null,
@@ -307,9 +307,10 @@ export function createPassService({
         destination: destination.destination,
       };
     });
-    if (result.origin.teacher_user_id) {
+    const teacherUserId = result.destination.teacher_user_id || result.origin.teacher_user_id;
+    if (teacherUserId) {
       onPassStarted({
-        teacherUserId: result.origin.teacher_user_id,
+        teacherUserId,
         passId: result.pass.id,
         originLocationId: result.pass.origin_location_id,
       });
@@ -494,7 +495,7 @@ export function createPassService({
   async function appointmentOptions(userId) {
     const locations = await passesRepository.listLocations();
     const teacherLocations = locations.filter((location) => location.teacher_user_id === userId);
-    return { locations, teacherLocations };
+    return { locations: teacherLocations };
   }
 
   async function findAppointmentStudent(studentNumber) {
@@ -514,7 +515,6 @@ export function createPassService({
     userId,
     studentNumber,
     studentName,
-    originLocationId,
     destinationLocationId,
     scheduledAt,
     notes,
@@ -527,17 +527,15 @@ export function createPassService({
       if (!student) throw new ValidationError('Student ID was not found');
       if (student.display_name.trim().toLowerCase() !== studentName.trim().toLowerCase())
         throw new ValidationError('Student name does not match that student ID');
-      const { origin, destination } = await passesRepository.findLocationPair(
-        originLocationId,
-        destinationLocationId,
-        trx,
-      );
-      if (!origin || !destination || origin.id === destination.id)
-        throw new ValidationError('Choose two different locations');
-      if (isBathroom(origin) || isBathroom(destination))
+      const origin = await passesRepository.findLocationByName('APPOINTMENT', trx);
+      if (!origin) throw new Error('The APPOINTMENT origin location is not configured');
+      const destination = await passesRepository.findLocationById(destinationLocationId, trx);
+      if (!destination || !destination.active || destination.id === origin.id)
+        throw new ValidationError('Choose a valid destination');
+      if (isBathroom(destination))
         throw new ValidationError('Bathrooms cannot be used for appointments');
-      if (origin.teacher_user_id !== userId && destination.teacher_user_id !== userId)
-        throw new AuthorizationError('One appointment location must be yours');
+      if (destination.teacher_user_id !== userId)
+        throw new AuthorizationError('The appointment destination must be assigned to you');
       const appointment = {
         id: randomUUID(),
         student_id: student.id,
@@ -701,8 +699,10 @@ export function createPassService({
     defaultLocation,
     active,
   }) {
-    if (!(await passesRepository.findLocationById(id)))
-      throw new NotFoundError('Location not found');
+    const location = await passesRepository.findLocationById(id);
+    if (!location) throw new NotFoundError('Location not found');
+    if (location.name === 'APPOINTMENT')
+      throw new ValidationError('The APPOINTMENT origin location cannot be changed');
     const existing = await passesRepository.findLocationByName(name);
     if (existing && existing.id !== id)
       throw new ConflictError('A location with that name already exists');
@@ -719,8 +719,10 @@ export function createPassService({
 
   async function deleteManagerLocation({ id }) {
     await db.transaction(async (trx) => {
-      if (!(await passesRepository.findLocationById(id, trx)))
-        throw new NotFoundError('Location not found');
+      const location = await passesRepository.findLocationById(id, trx);
+      if (!location) throw new NotFoundError('Location not found');
+      if (location.name === 'APPOINTMENT')
+        throw new ValidationError('The APPOINTMENT origin location cannot be deleted');
       await passesRepository.unassignLocationReferences(id, clock.now(), trx);
       await passesRepository.deleteLocation(id, trx);
     });

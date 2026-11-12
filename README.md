@@ -1,4 +1,4 @@
-[(https://githubusercontent.com)](https://github.com/csmith1188/YPass/raw/refs/heads/main/kioskMachine.zip)
+[Download Kiosk Machine](https://github.com/csmith1188/YPass/raw/refs/heads/main/kioskMachine.zip)
 
 
 # YPass

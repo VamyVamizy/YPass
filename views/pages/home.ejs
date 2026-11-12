@@ -6,10 +6,11 @@
     <p>You are signed in as <strong><%= currentUser.display_name %></strong>, but you don’t have permission to access this page.</p>
     <form method="post" action="/auth/logout">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-      <button type="submit">Sign out</button>
+      <button type="submit">↰ Sign out</button>
     </form>
   </section>
 <% } else { %>
-  <p>This is Elektronischer Hallenpass</p>
+  <p>Welcome to YPass</p>
+  <div class="h-line"></div>
   <p><a href="/auth/login">Sign in</a> to continue.</p>
 <% } %>

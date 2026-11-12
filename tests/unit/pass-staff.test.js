@@ -268,10 +268,10 @@ describe('staff pass controls', () => {
     });
   });
 
-  it('notifies the origin teacher when the kiosk completes an appointment', async () => {
+  it('notifies the destination teacher when the kiosk completes an appointment', async () => {
     ctx = await createTestApp();
     const knex = ctx.container.db.knex;
-    const mainOffice = await knex('locations').where({ name: 'Main Office' }).first();
+    const appointmentOrigin = await knex('locations').where({ name: 'APPOINTMENT' }).first();
     const counseling = await knex('locations').where({ name: 'Counseling Office' }).first();
     const teacherId = randomUUID();
     const student = await knex('students').where({ student_number: '200001' }).first();
@@ -281,14 +281,14 @@ describe('staff pass controls', () => {
       primary_email: `${teacherId}@example.test`,
       status: 'active',
     });
-    await knex('locations').where({ id: mainOffice.id }).update({ teacher_user_id: teacherId });
+    await knex('locations').where({ id: counseling.id }).update({ teacher_user_id: teacherId });
     const appointmentId = randomUUID();
     await knex('appointments').insert({
       id: appointmentId,
       student_id: student.id,
-      origin_location_id: mainOffice.id,
+      origin_location_id: appointmentOrigin.id,
       destination_location_id: counseling.id,
-      destination_teacher_id: counseling.teacher_user_id || null,
+      destination_teacher_id: teacherId,
       created_by: teacherId,
       scheduled_at: new Date(Date.now() + 60 * 1000),
       status: 'scheduled',
@@ -311,10 +311,17 @@ describe('staff pass controls', () => {
     });
 
     expect(started.pass.status).toBe('active');
+    expect(started.pass.journey_type).toBe('one_way');
+    expect(started.pass.origin_location_id).toBe(appointmentOrigin.id);
+    const completed = await ctx.container.passService.scanStudent({
+      kioskCode: 'counseling-main',
+      studentNumber: student.student_number,
+    });
+    expect(completed.action).toBe('completed');
     expect(events).toContainEqual({
       room: `teacher:${teacherId}`,
       event: 'teacher-pass-started',
-      payload: { passId: started.pass.id, originLocationId: mainOffice.id },
+      payload: { passId: started.pass.id, originLocationId: appointmentOrigin.id },
     });
   });
 
@@ -545,12 +552,26 @@ describe('staff pass controls', () => {
       userId: teacherId,
       studentNumber: '111111',
       studentName: 'Test Student 111111',
-      originLocationId: mainOffice.id,
-      destinationLocationId: counseling.id,
+      destinationLocationId: mainOffice.id,
       scheduledAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       notes: 'Testing appointment',
     });
     expect(appointment.appointment.status).toBe('scheduled');
+    const appointmentOrigin = await ctx.container.db.knex('locations')
+      .where({ name: 'APPOINTMENT' })
+      .first();
+    expect(appointment.appointment.origin_location_id).toBe(appointmentOrigin.id);
+    const appointmentOptions = await ctx.container.passService.appointmentOptions(teacherId);
+    expect(appointmentOptions.locations.map(({ id }) => id)).toEqual([mainOffice.id]);
+    await expect(
+      ctx.container.passService.createAppointment({
+        userId: teacherId,
+        studentNumber: '111111',
+        studentName: 'Test Student 111111',
+        destinationLocationId: counseling.id,
+        scheduledAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      }),
+    ).rejects.toMatchObject({ status: 403 });
     await expect(ctx.container.passService.findAppointmentStudent('111111')).resolves.toEqual({
       studentNumber: '111111',
       studentName: 'Test Student 111111',
@@ -641,7 +662,6 @@ describe('staff pass controls', () => {
     };
     await ctx.container.db.knex('users').insert(user);
     const mainOffice = await ctx.container.db.knex('locations').where({ name: 'Main Office' }).first();
-    const counseling = await ctx.container.db.knex('locations').where({ name: 'Counseling Office' }).first();
     await ctx.container.db.knex('locations').where({ id: mainOffice.id }).update({ teacher_user_id: teacherId });
     const student = await ctx.container.db.knex('students').where({ student_number: '111111' }).first();
 
@@ -649,8 +669,7 @@ describe('staff pass controls', () => {
       userId: teacherId,
       studentNumber: student.student_number,
       studentName: student.display_name,
-      originLocationId: mainOffice.id,
-      destinationLocationId: counseling.id,
+      destinationLocationId: mainOffice.id,
       scheduledAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
       notes: 'Late appointment',
     });

@@ -13,7 +13,7 @@
         <div class="account-info-box">✉ <%= currentUser.primary_email || 'no email' %> <span class="small-muted">(admin)</span></div>
         <form class="inline" method="post" action="/auth/logout">
           <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
-          <button type="submit">Sign out</button>
+          <button type="submit">↰ Sign out</button>
         </form>
       </li>
     </div>
@@ -22,23 +22,25 @@
     <button id="manager-tab-students" type="button" class="manager-tab is-active" role="tab" data-tab="students" aria-controls="manager-panel-students" aria-selected="true" tabindex="0"><img src="/images/person.svg" width="15" height="15">Students</button>
     <button id="manager-tab-locations" type="button" class="manager-tab" role="tab" data-tab="locations" aria-controls="manager-panel-locations" aria-selected="false" tabindex="-1"><img src="/images/location.svg" width="20" height="20">Locations</button>
     <button id="manager-tab-kiosks" type="button" class="manager-tab" role="tab" data-tab="kiosks" aria-controls="manager-panel-kiosks" aria-selected="false" tabindex="-1"><img src="/images/kiosk.svg" width="15" height="15">Kiosks</button>
+    <div class="manager-tab-divider"></div>
     <button id="manager-tab-passes" type="button" class="manager-tab" role="tab" data-tab="passes" aria-controls="manager-panel-passes" aria-selected="false" tabindex="-1"><img src="/images/ticket.svg" width="15" height="15">Passes</button>
     <button id="manager-tab-appointments" type="button" class="manager-tab" role="tab" data-tab="appointments" aria-controls="manager-panel-appointments" aria-selected="false" tabindex="-1"><img src="/images/timer.svg" width="15" height="15">Appointments</button>
-    <% if (sisEnabled) { %>
-      <button id="manager-tab-sis" type="button" class="manager-tab" role="tab" data-tab="sis" aria-controls="manager-panel-sis" aria-selected="false" tabindex="-1"><img src="/images/gear.svg" width="20" height="20">SIS integrations</button>
-    <% } %>
+    <div class="manager-tab-divider"></div>
     <button id="manager-tab-user-roles" type="button" class="manager-tab" role="tab" data-tab="user-roles" aria-controls="manager-panel-user-roles" aria-selected="false" tabindex="-1"><img src="/images/roles.svg" width="17" height="17">User roles</button>
+    <% if (sisEnabled) { %>
+      <button id="manager-tab-sis" type="button" class="manager-tab" role="tab" data-tab="sis" aria-controls="manager-panel-sis" aria-selected="false" tabindex="-1"><img src="/images/gear.svg" width="20" height="20">SIS</button>
+    <% } %>
   </nav>
   <div id="manager-panel-students" class="manager-tab-panel is-active" role="tabpanel" aria-labelledby="manager-tab-students" tabindex="0" data-panel="students">
     <section class="staff-section">
       <form method="post" action="/manager/students/create" class="staff-form manager-form">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <label>
-          <h4 class="small-muted">Name</h4>
+          <h4 class="small-muted">Name<span class="required-note"> *</span></h4>
           <input name="studentName" required maxlength="120">
         </label>
         <label>
-          <h4 class="small-muted">Student ID</h4>
+          <h4 class="small-muted">Student ID<span class="required-note"> *</span></h4>
           <input name="studentNumber" required maxlength="64">
         </label>
         <label>
@@ -50,6 +52,11 @@
         </label>
         <button type="submit">+ Add student</button>
       </form>
+      <br>
+      <div class="header-cont">
+        <img src="/images/person.svg" width="20" height="20">
+        <h2>All students</h2>
+      </div>
       <label class="student-search">
         <input type="search" data-student-search placeholder="⌕ Search students by name or ID" autocomplete="off">
       </label>
@@ -89,7 +96,7 @@
       <form method="post" action="/manager/locations/create" class="staff-form manager-form">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <label>
-          <h4 class="small-muted">Name</h4>
+          <h4 class="small-muted">Name<span class="required-note"> *</span></h4>
           <input name="name" required maxlength="120">
         </label>
         <label>
@@ -134,6 +141,11 @@
         </label>
         <button type="submit">+ Add location</button>
       </form>
+      <br>
+      <div class="header-cont">
+        <img src="/images/location.svg" width="25" height="25">
+        <h2>All locations</h2>
+      </div>
       <label class="student-search">
         <input type="search" data-location-search placeholder="⌕ Search locations by name or teacher" autocomplete="off">
       </label>
@@ -204,15 +216,15 @@
       <form method="post" action="/manager/kiosks/enrollment/complete" class="staff-form manager-form">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <label>
-          <h4 class="small-muted">Name</h4>
+          <h4 class="small-muted">Name<span class="required-note"> *</span></h4>
           <input name="name" required maxlength="120">
         </label>
         <label>
-          <h4 class="small-muted">Enrollment code</h4>
+          <h4 class="small-muted">Enrollment code<span class="required-note"> *</span></h4>
           <input name="enrollmentCode" required maxlength="16" placeholder="8K4P-29QX" autocomplete="off">
         </label>
         <label>
-          <h4 class="small-muted">Location</h4>
+          <h4 class="small-muted">Location<span class="required-note"> *</span></h4>
           <select name="locationId" required>
             <% locations.filter((location) => location.active && !kioskLocationIds.has(String(location.id))).forEach((location) => { %>
               <option data-language-ignore value="<%= location.id %>"><%= location.name %></option>
@@ -221,6 +233,11 @@
         </label>
         <button type="submit">+ Register kiosk</button>
       </form>
+      <br>
+      <div class="header-cont">
+        <img src="/images/kiosk.svg" width="20" height="20">
+        <h2>All kiosks</h2>
+      </div>
       <label class="student-search">
         <input type="search" data-kiosk-search placeholder="⌕ Search kiosks by name, code, or location" autocomplete="off">
       </label>
@@ -326,11 +343,11 @@
         <form method="post" class="staff-form manager-form" data-sis-create>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <label>
-            <h4 class="small-muted">Name</h4>
+            <h4 class="small-muted">Name<span class="required-note"> *</span></h4>
             <input name="connectionName" required maxlength="120">
           </label>
           <label>
-            <h4 class="small-muted">Provider</h4>
+            <h4 class="small-muted">Provider<span class="required-note"> *</span></h4>
             <select name="provider">
               <option value="mock">Mock</option>
               <option value="oneroster">OneRoster</option>
@@ -339,36 +356,36 @@
             </select>
           </label>
           <label>
-            <h4 class="small-muted">Base URL</h4>
+            <h4 class="small-muted">Base URL<span class="required-note"> *</span></h4>
             <input name="baseUrl" type="url" placeholder="https://sis.example.test">
           </label>
           <label>
-            <h4 class="small-muted">Protocol</h4>
+            <h4 class="small-muted">Protocol<span class="required-note"> *</span></h4>
             <select name="protocol">
               <option value="oneroster">OneRoster</option>
               <option value="api">Vendor API</option>
             </select>
           </label>
           <label>
-            <h4 class="small-muted">Platform</h4>
+            <h4 class="small-muted">Platform<span class="required-note"> *</span></h4>
             <select name="platform">
               <option value="qmlativ">Skyward Qmlativ</option>
               <option value="sms20">Skyward SMS 2.0</option>
             </select>
           </label>
           <label>
-            <h4 class="small-muted">Student path (optional)</h4>
+            <h4 class="small-muted">Student path</h4>
             <input name="studentPath" placeholder="/api/qmlativ/students">
           </label>
           <label>
-            <h4 class="small-muted">OneRoster Version</h4>
+            <h4 class="small-muted">OneRoster Version<span class="required-note"> *</span></h4>
             <select name="version">
               <option value="1.1">1.1</option>
               <option value="1.2">1.2</option>
             </select>
           </label>
           <label>
-            <h4 class="small-muted">Auth Type</h4>
+            <h4 class="small-muted">Auth Type<span class="required-note"> *</span></h4>
             <select name="authType">
               <option value="bearer">Bearer token</option>
               <option value="basic">Basic</option>
@@ -377,35 +394,35 @@
             </select>
           </label>
           <label>
-            <h4 class="small-muted">Username</h4>
+            <h4 class="small-muted">Username<span class="required-note"> *</span></h4>
             <input name="username" autocomplete="off">
           </label>
           <label>
-            <h4 class="small-muted">Password</h4>
+            <h4 class="small-muted">Password<span class="required-note"> *</span></h4>
             <input name="password" type="password" autocomplete="new-password">
           </label>
           <label>
-            <h4 class="small-muted">Token</h4>
+            <h4 class="small-muted">Token<span class="required-note"> *</span></h4>
             <input name="token" type="password" autocomplete="new-password">
           </label>
           <label>
-            <h4 class="small-muted">API key</h4>
+            <h4 class="small-muted">API key<span class="required-note"> *</span></h4>
             <input name="apiKey" type="password" autocomplete="new-password">
           </label>
           <label>
-            <h4 class="small-muted">Consumer key</h4>
+            <h4 class="small-muted">Consumer key<span class="required-note"> *</span></h4>
             <input name="consumerKey" autocomplete="off">
           </label>
           <label>
-            <h4 class="small-muted">Consumer secret</h4>
+            <h4 class="small-muted">Consumer secret<span class="required-note"> *</span></h4>
             <input name="consumerSecret" type="password" autocomplete="new-password">
           </label>
           <label>
-            <h4 class="small-muted">Token secret</h4>
+            <h4 class="small-muted">Token secret<span class="required-note"> *</span></h4>
             <input name="tokenSecret" type="password" autocomplete="new-password">
           </label>
           <label>
-            <h4 class="small-muted">Sync interval (seconds)</h4>
+            <h4 class="small-muted">Sync interval (seconds)<span class="required-note"> *</span></h4>
             <input name="syncIntervalSeconds" type="number" min="0" max="86400" value="0">
           </label>
           <button type="submit"><img src="/images/save.svg" width="15" height="15">Save connection</button>
@@ -448,7 +465,7 @@
             <input type="hidden" name="userId" value="<%= user.id %>">
             <div>
               <strong><%= user.display_name %></strong>
-              <p>✉ <%= user.primary_email || 'No email' %> · <%= user.roles?.join(', ') || 'student' %></p>
+              <p>✉ <%= user.primary_email || 'No email' %> | <strong class="small-muted"><%= user.roles?.join(', ') || 'student' %></strong></p>
             </div>
             <label>
               Role
@@ -458,7 +475,7 @@
                 <% }) %>
               </select>
             </label>
-            <button type="submit">Assign role</button>
+            <button type="submit"><img src="/images/save.svg" width="15" height="15">Save</button>
           </form>
         <% }) %>
       </div>
