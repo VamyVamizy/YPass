@@ -341,6 +341,7 @@ export function createPassService({
       if (await passes.findCurrentPassForStudent(student.id, trx)) {
         throw new ConflictError('This student already has a current pass');
       }
+      await ensureBathroomCapacity(kiosk.location_id, destination, trx);
 
       const appointment = await passes.findEligibleAppointment(
         student.id,
@@ -457,6 +458,10 @@ export function createPassService({
         throw new ConflictError('Only pending passes can be approved');
       if (action === 'cancel' && ['completed', 'cancelled', 'expired'].includes(pass.status))
         throw new ConflictError('This pass is already closed');
+      if (action === 'approve') {
+        const destination = await passesRepository.findLocationById(pass.destination_location_id, trx);
+        await ensureBathroomCapacity(pass.origin_location_id, destination, trx, pass.id);
+      }
       const patch =
         action === 'approve'
           ? {
@@ -726,6 +731,24 @@ export function createPassService({
     const user = await passesRepository.findManagerUserById(userId);
     if (!user || !user.roles.some((role) => role === 'teacher' || role === 'manager'))
       throw new ValidationError('Choose an active teacher or manager');
+  }
+
+  async function ensureBathroomCapacity(originLocationId, destination, trx, excludePassId = null) {
+    if (!destination || !isBathroom(destination)) return;
+    const bathroomCount = await passesRepository.countCurrentPasses(
+      { destinationLocationId: destination.id, excludePassId },
+      trx,
+    );
+    if (bathroomCount >= 6) {
+      throw new ConflictError('This bathroom is currently at capacity');
+    }
+    const classroomCount = await passesRepository.countCurrentPasses(
+      { destinationLocationId: destination.id, originLocationId, excludePassId },
+      trx,
+    );
+    if (classroomCount >= 2) {
+      throw new ConflictError('This classroom already has two students out at this bathroom');
+    }
   }
 
   async function createManagerKiosk({ name, kioskCode, kioskSecret, locationId, active }) {

@@ -261,6 +261,18 @@ export function createPassRepository(db) {
         .orderBy('requested_at', 'desc')
         .first();
     },
+    async countCurrentPasses(
+      { destinationLocationId, originLocationId = null, excludePassId = null },
+      trx = knex,
+    ) {
+      const query = trx('passes')
+        .where({ destination_location_id: destinationLocationId })
+        .whereIn('status', ['pending_approval', 'active', 'arrived', 'returning']);
+      if (originLocationId) query.where({ origin_location_id: originLocationId });
+      if (excludePassId) query.whereNot({ id: excludePassId });
+      const result = await query.count('* as count').first();
+      return Number(result?.count || 0);
+    },
     async findEligibleAppointment(
       studentId,
       originLocationId,

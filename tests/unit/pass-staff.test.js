@@ -384,6 +384,68 @@ describe('staff pass controls', () => {
     });
   });
 
+  it('limits each bathroom to six students and each classroom to two', async () => {
+    ctx = await createTestApp();
+    const knex = ctx.container.db.knex;
+    const bathroom = await knex('locations').where({ type: 'bathroom' }).first();
+    const origins = [];
+    const students = [];
+
+    for (let index = 0; index < 4; index += 1) {
+      const locationId = randomUUID();
+      const kioskCode = `capacity-classroom-${index}`;
+      await knex('locations').insert({
+        id: locationId,
+        name: `Capacity Classroom ${index}`,
+        type: 'one_way',
+        teacher_user_id: null,
+        active: true,
+      });
+      await knex('kiosks').insert({
+        id: randomUUID(),
+        location_id: locationId,
+        name: `Capacity Classroom ${index} Kiosk`,
+        kiosk_code: kioskCode,
+        active: true,
+      });
+      origins.push({ locationId, kioskCode });
+    }
+
+    for (let index = 0; index < 8; index += 1) {
+      const student = {
+        id: randomUUID(),
+        student_number: `capacity-${index}`,
+        display_name: `Capacity Student ${index}`,
+        status: 'active',
+      };
+      await knex('students').insert(student);
+      students.push(student);
+    }
+
+    const request = (studentIndex, originIndex) =>
+      ctx.container.passService.requestPass({
+        kioskCode: origins[originIndex].kioskCode,
+        studentNumber: students[studentIndex].student_number,
+        studentName: students[studentIndex].display_name,
+        destinationLocationId: bathroom.id,
+      });
+
+    await request(0, 0);
+    await request(1, 0);
+    await expect(request(2, 0)).rejects.toMatchObject({
+      status: 409,
+      message: 'This classroom already has two students out at this bathroom',
+    });
+    await request(3, 1);
+    await request(4, 1);
+    await request(5, 2);
+    await request(6, 2);
+    await expect(request(7, 3)).rejects.toMatchObject({
+      status: 409,
+      message: 'This bathroom is currently at capacity',
+    });
+  });
+
   it('limits pass actions to the origin teacher and supports appointments', async () => {
     ctx = await createTestApp();
     const teacherId = randomUUID();
